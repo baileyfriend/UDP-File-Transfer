@@ -12,6 +12,15 @@ class udpserver{
     
     public udpserver(){} //empty constructor
 
+    /*Method to make a packtet number into a 4byte array*/
+    public static byte[] getPNumBytes(int number){
+			//will return the number of which packet it is in 4 bytes
+			byte[] pnum = new byte[4];
+			pnum = number.toByteArray;
+			return pnum;
+	}
+    
+    
     public static void main(String args[]){
         
         try{
