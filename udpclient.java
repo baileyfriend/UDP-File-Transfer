@@ -8,7 +8,22 @@ import java.nio.channels.*;
 class udpclient{
 
 	public udpclient(){}
-	
+		/*
+			Returns the packet number of a given buffer/packet
+			@return Int packet number
+		  */
+		public static int getPNum(ByteBuffer bb){
+			bb.position(bb.position() - 1024);
+
+			byte a = bb.get();
+			byte b = bb.get();
+			byte c = bb.get();
+			byte d = bb.get();
+
+			int num = ((0xFF & a) << 24) | ((0xFF & b) << 16) | ((0xFF & c) << 8) | (0xFF & d);
+			return num;
+		
+		}
 		  /*
 			Checks if valid ip
 			@return True if string is a valid ip, else false
