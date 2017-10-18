@@ -16,13 +16,15 @@ class udpclient{
 		public static int getPNum(ByteBuffer bb){
 			bb.position(0); //I was trying to do it with bb.position() - 1024
 
-			byte a = bb.get();
-			byte b = bb.get();
-			byte c = bb.get();
-			byte d = bb.get();
+			byte a = bb.get(); //gets the first byte in the buffer
+			byte b = bb.get(); //gets the second byte in the buffer
+			byte c = bb.get(); //gets the third byte in the buffer
+			byte d = bb.get(); //gets the fourth byte in the buffer
 
 			int num = ((0xFF & a) << 24) | ((0xFF & b) << 16) | ((0xFF & c) << 8) | (0xFF & d);
-			return num;
+			//turns the bytes into an integer
+			
+			return num; //returns that integer that is the packet number
 		
 		}
 		  /*
@@ -117,55 +119,63 @@ class udpclient{
 				}
 				ByteBuffer buf = ByteBuffer.wrap(m.getBytes());
 				dc.send(buf,new InetSocketAddress(ipStr,portnum));  //sending the file name
+				
 				int lastR = 0; //the last packet number recived IN ORDER from the server
-				int packetNum = -1; // a variable to hold the values of the current packet number
+				
+				int packetNum = -1; // a temperary variable to hold the values of the current packet number
+				
 				File newfile = new File(m); //make an empty file with that file name
 				FileOutputStream outstream = new FileOutputStream(newfile); //set up an outputstream with that file
-          		FileChannel fc = outstream.getChannel(); //make the channel for the stream
-				ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>();
-				//while loop until the end of the packet
+          			FileChannel fc = outstream.getChannel(); //make the channel for the stream
+				ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>(); //this is an arraylist that is supposed to hold the buffers 
+				//that are not in order but are going to be used later
+				
+				//while loop until the end of the packet or having a flag for the last packet sent for the file
 					//Packet1
-					//for(int x=lastR; x < x+5; x++){ // this is a never ending loop but it is on the right track
-					//	System.out.println("loop is here");
-						ByteBuffer bufff = ByteBuffer.allocate(1024);
-						//int bytesRead = dc.read(bufff);
+					/*This for loop below is trying to impliemnt the sliding window. X is the packet number of the last packet received in order
+					and the loop will go 5 packets passed that (thats how the sliding window is supposed to work) the loop is a never ending loop
+					but I have it set up for a flagged packet, so the very last packet will have a packet number of zero and the loop will 
+					know that it is done looping and being a window.*/
+				
+					//for(int x=lastR; x < x+5; x++){ //this is the loop described above
+					//	System.out.println("loop is here"); for testing purposes
+						ByteBuffer bufff = ByteBuffer.allocate(1024); //the bufffer for the loop
+						//int bytesRead = dc.read(bufff); //a failed attempt at getting the packet number reading working
 						SocketAddress serverAddr = dc.receive(bufff); //receving the packet
 						
 						packetNum = getPNum(bufff); //getting the packet number
 						
-						//if(packetNum == 0){ // need and if statement with a break inorder to stop this loop
+						//if(packetNum == 0){ // need and if statement with a break inorder to stop this loop (as described above)
 						//	break;
 						//}
 							
-						ByteBuffer akn = ByteBuffer.allocate(4);
-						akn.putInt(packetNum);
+						ByteBuffer akn = ByteBuffer.allocate(4); //buffer to hold the acknowlagement for packets
+						akn.putInt(packetNum); //putting the packet number into the buffer
 						//dc.send(akn,serverAddr);//sending the aknowlagement- a packet of 4 bytes with just the packet number
 						
 						//if(packetNum == lastR+1){ //making sure this is the next packet we expect to get
 						
 							lastR = packetNum; //incrementing the last recived so we know what in order packets we have
-							//bufff.position(4);
-							//System.out.println(Arrays.toString(bufff.array()));
-							//bufff.flip(); //putting the buffer into reading mode
-							//might need to change position
-							//bufff.position(4);
+							//bufff.position(4); FAILED attempt at moving the buffer but might work if implemented differnt?
+							//System.out.println(Arrays.toString(bufff.array())); //printing out the buffer
+							//bufff.flip(); //putting the buffer into reading mode BUT this broke the code once upon a time
 							//
-							//byte[] array = bufff.array();
-							//for(byte b:array)
-							//bufff.position(4);
-							//buff.trim();
+							//byte[] array = bufff.array(); // the connected failed attempt at reading the packet number 
+							//for(byte b:array) //and idea that might work
 							
-							//while(bytesRead != -1){
+							//while(bytesRead != -1){ // this is how the TCP one worked but its not working here
 								//bufff.flip(); THIS FLIP BREAKS IT
-								//System.out.println(Arrays.toString(bufff.array()));
+								//System.out.println(Arrays.toString(bufff.array())); //printing contents of a buffer
 								
 		      		    		fc.write(bufff); //writing the buffer into the file and the postion
-		      		    		bufff.compact();//
-		      		    		//bytesRead = dc.read(bufff);
-		      		    	//}
+		      		    		bufff.compact();// compacting the buffer
+		      		    		//bytesRead = dc.read(bufff); // connected to the TCP failed attempt
+		      		    	//} //for the for loop
 		      		    	//bufff.compact();//clears the buffer
 						//}
-						//else{} //this packet is not inorder and we should save it into some kind of array?
+						//else{
+							//this packet is not inorder and we should save it into the array buffersthatwehave
+							} 
 
 					//}
 					
