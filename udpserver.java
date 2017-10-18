@@ -104,26 +104,26 @@ class udpserver{
                 	int packetNum = 0;
                 	int lastsent = -1;
                 	ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>(); //an array list of all the aknowlaged packet numbers
-                	ArrayList<Integer> nums = new ArrayList<Integer>();
-                	//possibly an array list of all of the buffers for easy resend of packets
-                	ByteBuffer bufff = ByteBuffer.allocate(1024);
-                	ByteBuffer akBuff = ByteBuffer.allocate(4);
+                	ArrayList<Integer> nums = new ArrayList<Integer>(); //an array of acknowlaged packets
+                	ByteBuffer bufff = ByteBuffer.allocate(1024); //buffer for packets
+                	ByteBuffer akBuff = ByteBuffer.allocate(4); //buffer for acknowlagements
                 	
-		            	//for(int x=lastA; x < x+5; x++){ // this is a never ending loop but it is on the right track
-		            	//	System.out.println("loop is here");
+		            	//for(int x=lastA; x < x+5; x++){ // this is a never ending loop SEE client side for detail because it is the same 
+			//loop in both
+		            	//	System.out.println("loop is here"); //error checking
 		            		bufff.putInt(packetNum); //putting the packet number into the first 4 bytes of the buffer
 		            		fc.read(bufff); //filling the rest of the buffer with information from the file
-		            		bufff.flip();
-		            		System.out.println(Arrays.toString(bufff.array()));
-		            		c.send(bufff,clientaddr);
-		            		lastsent = packetNum;
-		            		packetNum = packetNum+1;
+		            		bufff.flip(); //flipping the buffer
+		            		System.out.println(Arrays.toString(bufff.array())); // printing the buffer for error checking
+		            		c.send(bufff,clientaddr); //sending the buffer
+		            		lastsent = packetNum; // setting the last send to what we last sent
+		            		packetNum = packetNum+1; // incrementing packet number
 							bufff.compact();
 							//c.receive(akBuff); //receiving an aknowlagement
-							//akNum = getPNum(akBuff);
-							//nums.add(akNum);
+							//akNum = getPNum(akBuff); //getting packet number of the acknowlagement
+							//nums.add(akNum); //adding it to the list
 							//if (akNum == 0){ //this was the last packet we had to send so we want to break the loop.
-							//	break;
+							//	break; //done sending this file
 							//}
 							//if(lastA != lastsent -4){ //if we need to resent a packet
 							//	break;
@@ -138,7 +138,7 @@ class udpserver{
     }
 }
 	
-	/*Code below is for sending a file
+	/*Code below is for sending a file when using TCP for reference
 							buf.flip();
 				  		    c.send(buf, clientaddr);
 				  		    buf.compact();
@@ -146,8 +146,8 @@ class udpserver{
 							currWindow++;
 
 
-
-	class slidingWindow(){
+Below is an idea for a class but we could always do these things without it
+	class slidingWindow(){ 
 	
 		public static byte[] getPNumBytes(int number){
 			//will return the number of which packet it is in 4 bytes
