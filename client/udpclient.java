@@ -219,8 +219,8 @@ class udpclient{
 					
 				}
 
-				currentPacketNum = packetNum.getInt();
-				System.out.println("Packet number: " + lastPacketNum);
+				int pnumint = getPNum(packetNum);
+				System.out.println("Packet number: " + pnumindex);
 				
 				if(currentPacketNum == lastPacketNum + 1){
 					fc.write(data);

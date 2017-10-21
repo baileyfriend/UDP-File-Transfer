@@ -95,7 +95,7 @@ class udpserver{
 
 				Path filepath = f.toPath();
 				int size = (int)Files.size(filepath); // the size in bytes 
-				System.out.println("size of file 1 : " + size);
+				System.out.println("size of file: " + size);
 				//int totalP = size/1020;
             	
             	if(fileExists){
@@ -174,20 +174,21 @@ class udpserver{
 		
 		
 			System.out.println("entered try catch");
-			int bytesread = fc.read(tempBuf);
-			System.out.println("entered try catch 2: " + bytesread);
-			while(bytesread > 0){ //loop through file
-				System.out.println("Reading File loop 1");
-				System.out.println("reading file");
+			//int bytesread = fc.read(tempBuf);
+			//System.out.println("entered try catch 2: " + bytesread);
+			while(fc.read(tempBuf) > 0){ //loop through file
+				//System.out.println("Reading File loop: " + instream.read(tempBuf));
 				
 				//putting packet number into bufNum
 				bufNum.asIntBuffer().put(n);
 				//put part of contents of file into tempBuf
-				bytesread = fc.read(tempBuf);
+				//bytesread = fc.read(tempBuf);
+				//System.out.println("Reading File loop 2: " + instream.read(tempBuf));
 				tempBuf.flip();
+				System.out.println("putting data into buffer: " + tempBuf.toString());
 				//put packet number and tempBuf into mapOfBuffers
 				mapOfBuffers.put(bufNum, tempBuf);
-	
+				//System.out.println("read file loop: " + n);
 				//increment n and the file location
 				n++;
 				//bytesread = fc.read(tempBuf);
@@ -201,8 +202,17 @@ class udpserver{
 		int last = 0; // This is the last packet number we got an ack from
 		int numAcksAwaiting = 0;
 		ByteBuffer currentBuf = ByteBuffer.allocate(1024);
+		ByteBuffer acknumBuf = ByteBuffer.allocate(4);
 		
-
+		System.out.println("Num buffers in map: " + mapOfBuffers.size());
+		
+		// while(last < mapOfBuffers.size()){ -- old way of looping through map - may have to use this
+		// 	System.out.println("Last: " + last);
+		// 	acknumBuf.putInt(last);
+		// 	System.out.println("Value: " + mapOfBuffers.get(acknumBuf));
+		// 	last++;
+		// 	acknumBuf.clear();
+		// }
 		for (Map.Entry<ByteBuffer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
 			currentBuf.put(entry.getKey());
 			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
@@ -211,13 +221,31 @@ class udpserver{
 			c.send(currentBuf, clientaddr);
 			currentBuf.clear();
 			numAcksAwaiting++; //Every time we send another packet we are awaiting another ack
+			
+			
 
-			if(numAcksAwaiting == MAXNUM){
-				System.out.println("WE MADE IT INTO THE LOOP OMG OMG OMG OMG");
+			if(numAcksAwaiting >= MAXNUM){ // if at max of sliding window
+				//System.out.println("At max");
+				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
+				last = acknumBuf.getInt();
+				//System.out.println("Last acknum recieved by server before flip: " + last);
+				acknumBuf.flip();
+				last = acknumBuf.getInt();
+				//System.out.println("Last acknum recieved by server after flip: " + last);
+				acknumBuf.clear();
+			} else {
+				System.out.println("NOT at max");
+				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
+				last = acknumBuf.getInt();
+				System.out.println("Last acknum recieved by server before flip: " + last);
+				acknumBuf.flip();
+				last = acknumBuf.getInt();
+				System.out.println("Last acknum recieved by server after flip: " + last);
+				acknumBuf.clear();
 			}
 
 		}
-	} catch(Exception e){
+	} catch(IOException e){
 		System.out.println("Caught exception e: " + e);
 	}
 	}
