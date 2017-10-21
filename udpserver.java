@@ -81,61 +81,146 @@ class udpserver{
             	ByteBuffer buffer = ByteBuffer.allocate(1024); //our buffer can only be 1024
             	SocketAddress clientaddr = c.receive(buffer); //reading in the file name b/c its the first thing being sent
             	System.out.println("A client is requesting information");
-            	
-            	String fileStr = new String(buffer.array());
-            	fileStr = fileStr.trim();
-            	File f = new File(fileStr);
-            	String filename = f.getName();
+				
+				Path cwd = Paths.get("");
+				
+				String fileStr = new String(buffer.array());
+				fileStr = fileStr.trim(); // have to trim leading and trailing spaces due to making string from oversized buffer
+				//System.out.println((int)Files.size(fileStr));
+				File f = new File(fileStr);
+				
+				String filename = f.getName();
+				boolean fileExists = f.exists();
+				System.out.println("Filename to be transferred: " + filename);
 
-            	boolean fileExists = f.exists();
+				Path filepath = f.toPath();
+				int size = (int)Files.size(filepath); // the size in bytes 
+				System.out.println("size of file 1 : " + size);
+				//int totalP = size/1020;
             	
             	if(fileExists){
                 	System.out.println("File exists");
-                	Path filepath = f.toPath();
-                	int size = (int)Files.size(filepath); // the size in bytes 
-                	int totalP = size/1020; //(hopfully can use this to find out how many packets it is going to take)
+                	// Path filepath = f.toPath();
+                	// int size = (int)Files.size(filepath); // the size in bytes 
+                	// int totalP = size/1020; //(hopfully can use this to find out how many packets it is going to take)
                 	
-                	FileInputStream instream = new FileInputStream(f);
-                	FileChannel fc = instream.getChannel();
+                	// FileInputStream instream = new FileInputStream(f);
+					// FileChannel fc = instream.getChannel();
+					
+					server.sendPackets(f, c, clientaddr);
                 	//ByteBuffer buf = ByteBuffer.allocate(1024);
                 	//int bytesread = fc.read(buf); //might not use this???
-                	int lastA = -1;
-                	int akNum = -1;
-                	int packetNum = 0;
-                	int lastsent = -1;
-                	ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>(); //an array list of all the aknowlaged packet numbers
-                	ArrayList<Integer> nums = new ArrayList<Integer>(); //an array of acknowlaged packets
-                	ByteBuffer bufff = ByteBuffer.allocate(1024); //buffer for packets
-                	ByteBuffer akBuff = ByteBuffer.allocate(4); //buffer for acknowlagements
+            //     	int lastA = -1;
+            //     	int akNum = -1;
+            //     	int packetNum = 0;
+            //     	int lastsent = -1;
+            //     	ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>(); //an array list of all the aknowlaged packet numbers
+            //     	ArrayList<Integer> nums = new ArrayList<Integer>(); //an array of acknowlaged packets
+            //     	ByteBuffer bufff = ByteBuffer.allocate(1024); //buffer for packets
+            //     	ByteBuffer akBuff = ByteBuffer.allocate(4); //buffer for acknowlagements
                 	
-		            	//for(int x=lastA; x < x+5; x++){ // this is a never ending loop SEE client side for detail because it is the same 
-			//loop in both
-		            	//	System.out.println("loop is here"); //error checking
-		            		bufff.putInt(packetNum); //putting the packet number into the first 4 bytes of the buffer
-		            		fc.read(bufff); //filling the rest of the buffer with information from the file
-		            		bufff.flip(); //flipping the buffer
-		            		System.out.println(Arrays.toString(bufff.array())); // printing the buffer for error checking
-		            		c.send(bufff,clientaddr); //sending the buffer
-		            		lastsent = packetNum; // setting the last send to what we last sent
-		            		packetNum = packetNum+1; // incrementing packet number
-							bufff.compact();
-							//c.receive(akBuff); //receiving an aknowlagement
-							//akNum = getPNum(akBuff); //getting packet number of the acknowlagement
-							//nums.add(akNum); //adding it to the list
-							//if (akNum == 0){ //this was the last packet we had to send so we want to break the loop.
-							//	break; //done sending this file
-							//}
-							//if(lastA != lastsent -4){ //if we need to resent a packet
-							//	break;
-		            		//	}
-                		//}
+		    //         	//for(int x=lastA; x < x+5; x++){ // this is a never ending loop SEE client side for detail because it is the same 
+			// //loop in both
+		    //         	//	System.out.println("loop is here"); //error checking
+		    //         		bufff.putInt(packetNum); //putting the packet number into the first 4 bytes of the buffer
+		    //         		fc.read(bufff); //filling the rest of the buffer with information from the file
+		    //         		bufff.flip(); //flipping the buffer
+		    //         		System.out.println(Arrays.toString(bufff.array())); // printing the buffer for error checking
+		    //         		c.send(bufff,clientaddr); //sending the buffer
+		    //         		lastsent = packetNum; // setting the last send to what we last sent
+		    //         		packetNum = packetNum+1; // incrementing packet number
+			// 				bufff.compact();
+			// 				//c.receive(akBuff); //receiving an aknowlagement
+			// 				//akNum = getPNum(akBuff); //getting packet number of the acknowlagement
+			// 				//nums.add(akNum); //adding it to the list
+			// 				//if (akNum == 0){ //this was the last packet we had to send so we want to break the loop.
+			// 				//	break; //done sending this file
+			// 				//}
+			// 				//if(lastA != lastsent -4){ //if we need to resent a packet
+			// 				//	break;
+		    //         		//	}
+			// 			//}
+						
+
+
+
                 }
              }
         }catch(IOException e){
-            System.out.println("Got an IO Exception");
+            System.out.println("Got an IO Exception: " + e);
         }
 
-    }
+	}
+	
+
+	public void sendPackets(File f, DatagramChannel c, SocketAddress clientaddr){
+		try{
+		Path filepath = f.toPath();
+		int size = (int)Files.size(filepath); // the size in bytes 
+		System.out.println("size of file: " + size);
+		int totalP = size/1020; //(hopfully can use this to find out how many packets it is going to take)
+		
+		FileInputStream instream = new FileInputStream(f);
+		FileChannel fc = instream.getChannel();
+		System.out.println("Entered sendPackets method");
+		Map<ByteBuffer, ByteBuffer> mapOfBuffers = new HashMap<ByteBuffer, ByteBuffer>();
+		System.out.println("sendPackets method 1");
+		ByteBuffer bufNum = ByteBuffer.allocate(4);
+		System.out.println("Entered sendPackets method 2");
+		ByteBuffer tempBuf = ByteBuffer.allocate(1020);
+		System.out.println("Entered sendPackets method 3");
+		int n = 1;
+		System.out.println("Entered sendPackets method 4");
+		
+		
+			System.out.println("entered try catch");
+			int bytesread = fc.read(tempBuf);
+			System.out.println("entered try catch 2: " + bytesread);
+			while(bytesread > 0){ //loop through file
+				System.out.println("Reading File loop 1");
+				System.out.println("reading file");
+				
+				//putting packet number into bufNum
+				bufNum.asIntBuffer().put(n);
+				//put part of contents of file into tempBuf
+				bytesread = fc.read(tempBuf);
+				tempBuf.flip();
+				//put packet number and tempBuf into mapOfBuffers
+				mapOfBuffers.put(bufNum, tempBuf);
+	
+				//increment n and the file location
+				n++;
+				//bytesread = fc.read(tempBuf);
+			}
+
+		
+		// Now mapOfBuffers contains the packet number and the flipped ByteBuffers for the whole file
+		// NEXT: Send each packet (max 5 at a time) and wait for acks to move forward
+
+		int MAXNUM = 5; //Max number of open packets (size of sliding window)
+		int last = 0; // This is the last packet number we got an ack from
+		int numAcksAwaiting = 0;
+		ByteBuffer currentBuf = ByteBuffer.allocate(1024);
+		
+
+		for (Map.Entry<ByteBuffer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
+			currentBuf.put(entry.getKey());
+			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
+
+			//DatagramPacket packet = new DatagramPacket(currentBuf, currentBuf.length, clientaddr);
+			c.send(currentBuf, clientaddr);
+			currentBuf.clear();
+			numAcksAwaiting++; //Every time we send another packet we are awaiting another ack
+
+			if(numAcksAwaiting == MAXNUM){
+				System.out.println("WE MADE IT INTO THE LOOP OMG OMG OMG OMG");
+			}
+
+		}
+	} catch(Exception e){
+		System.out.println("Caught exception e: " + e);
+	}
+	}
 }
 	
 	/*Code below is for sending a file when using TCP for reference
