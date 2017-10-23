@@ -9,6 +9,7 @@ import java.nio.channels.*;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.util.*;
+import java.nio.charset.Charset;
 
 class udpserver{
     
@@ -163,31 +164,30 @@ class udpserver{
 		FileInputStream instream = new FileInputStream(f);
 		FileChannel fc = instream.getChannel();
 		System.out.println("Entered sendPackets method");
-		Map<ByteBuffer, ByteBuffer> mapOfBuffers = new HashMap<ByteBuffer, ByteBuffer>();
-		System.out.println("sendPackets method 1");
+		Map<Integer, ByteBuffer> mapOfBuffers = new HashMap<Integer, ByteBuffer>();
+		
 		ByteBuffer bufNum = ByteBuffer.allocate(4);
-		System.out.println("Entered sendPackets method 2");
 		ByteBuffer tempBuf = ByteBuffer.allocate(1020);
-		System.out.println("Entered sendPackets method 3");
+		
+		
 		int n = 1;
-		System.out.println("Entered sendPackets method 4");
 		
 		
 			System.out.println("entered try catch");
 			//int bytesread = fc.read(tempBuf);
 			//System.out.println("entered try catch 2: " + bytesread);
 			while(fc.read(tempBuf) > 0){ //loop through file
+				
 				//System.out.println("Reading File loop: " + instream.read(tempBuf));
 				
 				//putting packet number into bufNum
-				bufNum.asIntBuffer().put(n);
+				//bufNum.asIntBuffer().put(n);
 				//put part of contents of file into tempBuf
 				//bytesread = fc.read(tempBuf);
 				//System.out.println("Reading File loop 2: " + instream.read(tempBuf));
 				tempBuf.flip();
-				System.out.println("putting data into buffer: " + tempBuf.toString());
 				//put packet number and tempBuf into mapOfBuffers
-				mapOfBuffers.put(bufNum, tempBuf);
+				mapOfBuffers.put(n, tempBuf);
 				//System.out.println("read file loop: " + n);
 				//increment n and the file location
 				n++;
@@ -213,12 +213,15 @@ class udpserver{
 		// 	last++;
 		// 	acknumBuf.clear();
 		// }
-		for (Map.Entry<ByteBuffer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
-			currentBuf.put(entry.getKey());
+		for (Map.Entry<Integer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
+			System.out.println("Key from map : " + entry.getKey());
+			currentBuf.putInt(entry.getKey());
 			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
-
+			//System.out.println("pnum in currentbuf : " + getPNum(currentBuf));
 			//DatagramPacket packet = new DatagramPacket(currentBuf, currentBuf.length, clientaddr);
+			currentBuf.flip();
 			c.send(currentBuf, clientaddr);
+			//System.out.println("SENDING ACK NUMBER : " + getPNum(currentBuf));
 			currentBuf.clear();
 			numAcksAwaiting++; //Every time we send another packet we are awaiting another ack
 			
@@ -227,28 +230,38 @@ class udpserver{
 			if(numAcksAwaiting >= MAXNUM){ // if at max of sliding window
 				//System.out.println("At max");
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
-				last = acknumBuf.getInt();
-				//System.out.println("Last acknum recieved by server before flip: " + last);
-				acknumBuf.flip();
-				last = acknumBuf.getInt();
+				//String s = new String(acknumBuf);
+				//System.out.println("Acknum buffer: " + (char) acknumBuf.get());
+				//System.out.println("acknum: " + last);
+				last = getPNum(acknumBuf);
+				//System.out.println("acknum from getpnum method: " + last);
+				// acknumBuf.flip();
+				// last = getPNum(acknumBuf);
 				//System.out.println("Last acknum recieved by server after flip: " + last);
 				acknumBuf.clear();
 			} else {
 				System.out.println("NOT at max");
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
-				last = acknumBuf.getInt();
-				System.out.println("Last acknum recieved by server before flip: " + last);
-				acknumBuf.flip();
-				last = acknumBuf.getInt();
+				last = getPNum(acknumBuf);
+				// System.out.println("Last acknum recieved by server before flip: " + last);
+				// acknumBuf.flip();
+				// last = acknumBuf.getInt();
 				System.out.println("Last acknum recieved by server after flip: " + last);
 				acknumBuf.clear();
 			}
 
 		}
+		int endMarkerNum = -10;
+		currentBuf.putInt(endMarkerNum);
+		c.send(currentBuf, clientaddr);
+		return;
 	} catch(IOException e){
 		System.out.println("Caught exception e: " + e);
+		return;
 	}
 	}
+
+
 }
 	
 	/*Code below is for sending a file when using TCP for reference
