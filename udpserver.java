@@ -87,64 +87,19 @@ class udpserver{
 				
 				String fileStr = new String(buffer.array());
 				fileStr = fileStr.trim(); // have to trim leading and trailing spaces due to making string from oversized buffer
-				//System.out.println((int)Files.size(fileStr));
+				
 				File f = new File(fileStr);
 				
 				String filename = f.getName();
 				boolean fileExists = f.exists();
-				System.out.println("Filename to be transferred: " + filename);
 
 				Path filepath = f.toPath();
 				int size = (int)Files.size(filepath); // the size in bytes 
-				System.out.println("size of file: " + size);
-				//int totalP = size/1020;
             	
             	if(fileExists){
                 	System.out.println("File exists");
-                	// Path filepath = f.toPath();
-                	// int size = (int)Files.size(filepath); // the size in bytes 
-                	// int totalP = size/1020; //(hopfully can use this to find out how many packets it is going to take)
-                	
-                	// FileInputStream instream = new FileInputStream(f);
-					// FileChannel fc = instream.getChannel();
 					
 					server.sendPackets(f, c, clientaddr);
-                	//ByteBuffer buf = ByteBuffer.allocate(1024);
-                	//int bytesread = fc.read(buf); //might not use this???
-            //     	int lastA = -1;
-            //     	int akNum = -1;
-            //     	int packetNum = 0;
-            //     	int lastsent = -1;
-            //     	ArrayList<ByteBuffer> buffersthatwehave = new ArrayList<ByteBuffer>(); //an array list of all the aknowlaged packet numbers
-            //     	ArrayList<Integer> nums = new ArrayList<Integer>(); //an array of acknowlaged packets
-            //     	ByteBuffer bufff = ByteBuffer.allocate(1024); //buffer for packets
-            //     	ByteBuffer akBuff = ByteBuffer.allocate(4); //buffer for acknowlagements
-                	
-		    //         	//for(int x=lastA; x < x+5; x++){ // this is a never ending loop SEE client side for detail because it is the same 
-			// //loop in both
-		    //         	//	System.out.println("loop is here"); //error checking
-		    //         		bufff.putInt(packetNum); //putting the packet number into the first 4 bytes of the buffer
-		    //         		fc.read(bufff); //filling the rest of the buffer with information from the file
-		    //         		bufff.flip(); //flipping the buffer
-		    //         		System.out.println(Arrays.toString(bufff.array())); // printing the buffer for error checking
-		    //         		c.send(bufff,clientaddr); //sending the buffer
-		    //         		lastsent = packetNum; // setting the last send to what we last sent
-		    //         		packetNum = packetNum+1; // incrementing packet number
-			// 				bufff.compact();
-			// 				//c.receive(akBuff); //receiving an aknowlagement
-			// 				//akNum = getPNum(akBuff); //getting packet number of the acknowlagement
-			// 				//nums.add(akNum); //adding it to the list
-			// 				//if (akNum == 0){ //this was the last packet we had to send so we want to break the loop.
-			// 				//	break; //done sending this file
-			// 				//}
-			// 				//if(lastA != lastsent -4){ //if we need to resent a packet
-			// 				//	break;
-		    //         		//	}
-			// 			//}
-						
-
-
-
                 }
              }
         }catch(IOException e){
@@ -158,12 +113,12 @@ class udpserver{
 		try{
 		Path filepath = f.toPath();
 		int size = (int)Files.size(filepath); // the size in bytes 
-		System.out.println("size of file: " + size);
+		
 		int totalP = size/1020; //(hopfully can use this to find out how many packets it is going to take)
 		
 		FileInputStream instream = new FileInputStream(f);
 		FileChannel fc = instream.getChannel();
-		System.out.println("Entered sendPackets method");
+		
 		Map<Integer, ByteBuffer> mapOfBuffers = new HashMap<Integer, ByteBuffer>();
 		
 		ByteBuffer bufNum = ByteBuffer.allocate(4);
@@ -173,25 +128,14 @@ class udpserver{
 		int n = 1;
 		
 		
-			System.out.println("entered try catch");
-			//int bytesread = fc.read(tempBuf);
-			//System.out.println("entered try catch 2: " + bytesread);
 			while(fc.read(tempBuf) > 0){ //loop through file
-				
-				//System.out.println("Reading File loop: " + instream.read(tempBuf));
-				
-				//putting packet number into bufNum
-				//bufNum.asIntBuffer().put(n);
-				//put part of contents of file into tempBuf
-				//bytesread = fc.read(tempBuf);
-				//System.out.println("Reading File loop 2: " + instream.read(tempBuf));
 				tempBuf.flip();
 				//put packet number and tempBuf into mapOfBuffers
 				mapOfBuffers.put(n, tempBuf);
-				//System.out.println("read file loop: " + n);
+				
 				//increment n and the file location
 				n++;
-				//bytesread = fc.read(tempBuf);
+				
 			}
 
 		
@@ -204,24 +148,11 @@ class udpserver{
 		ByteBuffer currentBuf = ByteBuffer.allocate(1024);
 		ByteBuffer acknumBuf = ByteBuffer.allocate(4);
 		
-		System.out.println("Num buffers in map: " + mapOfBuffers.size());
-		
-		// while(last < mapOfBuffers.size()){ -- old way of looping through map - may have to use this
-		// 	System.out.println("Last: " + last);
-		// 	acknumBuf.putInt(last);
-		// 	System.out.println("Value: " + mapOfBuffers.get(acknumBuf));
-		// 	last++;
-		// 	acknumBuf.clear();
-		// }
 		for (Map.Entry<Integer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
-			System.out.println("Key from map : " + entry.getKey());
 			currentBuf.putInt(entry.getKey());
 			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
-			//System.out.println("pnum in currentbuf : " + getPNum(currentBuf));
-			//DatagramPacket packet = new DatagramPacket(currentBuf, currentBuf.length, clientaddr);
 			currentBuf.flip();
 			c.send(currentBuf, clientaddr);
-			//System.out.println("SENDING ACK NUMBER : " + getPNum(currentBuf));
 			currentBuf.clear();
 			numAcksAwaiting++; //Every time we send another packet we are awaiting another ack
 			
@@ -230,23 +161,17 @@ class udpserver{
 			if(numAcksAwaiting >= MAXNUM){ // if at max of sliding window
 				//System.out.println("At max");
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
-				//String s = new String(acknumBuf);
-				//System.out.println("Acknum buffer: " + (char) acknumBuf.get());
-				//System.out.println("acknum: " + last);
+				acknumBuf.flip();
+				int acknum = acknumBuf.getInt();
+				if(acknum < 0){
+					return; //Then client confirmed that they got the endmarker
+				}
+
 				last = getPNum(acknumBuf);
-				//System.out.println("acknum from getpnum method: " + last);
-				// acknumBuf.flip();
-				// last = getPNum(acknumBuf);
-				//System.out.println("Last acknum recieved by server after flip: " + last);
 				acknumBuf.clear();
 			} else {
-				System.out.println("NOT at max");
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
 				last = getPNum(acknumBuf);
-				// System.out.println("Last acknum recieved by server before flip: " + last);
-				// acknumBuf.flip();
-				// last = acknumBuf.getInt();
-				System.out.println("Last acknum recieved by server after flip: " + last);
 				acknumBuf.clear();
 			}
 
@@ -263,45 +188,4 @@ class udpserver{
 
 
 }
-	
-	/*Code below is for sending a file when using TCP for reference
-							buf.flip();
-				  		    c.send(buf, clientaddr);
-				  		    buf.compact();
-							bytesread = fc.read(buf);
-							currWindow++;
 
-
-Below is an idea for a class but we could always do these things without it
-	class slidingWindow(){ 
-	
-		public static byte[] getPNumBytes(int number){
-			//will return the number of which packet it is in 4 bytes
-			byte[] pnum = new byte[4];
-			pnum = number.toByteArray;
-			return pnum;
-		}
-		public static boolean isAknowlaged(){
-			//will return whether or not the package was aknowlaged by the client.
-		}
-	
-	
-	
-	@TODO: for the sliding window:
-			-send packet number with packet
-			-for simplicity just number packets 1 to 4billion (no need to wrap around and reuse numbers)
-			-only send 5 packets at a time
-			-recive aknowlagements for all packets and keep the last one that is IN ORDER 
-				for example if we get aknowlagements 1 2 4 5 then the variable last aknowlaged would be 2
-			-HAVE variable last packet recived (as decribed above)
-			-keep all packets we sent in an array (the contents of the buffers)
-			-resend missing packets
-				also off of the example above (aknowlagements for 1 2 4 5) MOVE the window by sending packets 6 and 7
-	*/
-	
-	
-	
-	
-	
-	
-	
