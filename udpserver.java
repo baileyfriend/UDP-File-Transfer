@@ -9,7 +9,6 @@ import java.nio.channels.*;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.util.*;
-import java.nio.charset.Charset;
 
 class udpserver{
     
@@ -118,21 +117,44 @@ class udpserver{
 		
 		FileInputStream instream = new FileInputStream(f);
 		FileChannel fc = instream.getChannel();
+<<<<<<< HEAD
 		
 		Map<Integer, ByteBuffer> mapOfBuffers = new HashMap<Integer, ByteBuffer>();
 		
+=======
+		System.out.println("Entered sendPackets method");
+		Map<ByteBuffer, ByteBuffer> mapOfBuffers = new HashMap<ByteBuffer, ByteBuffer>();
+		System.out.println("sendPackets method 1");
+>>>>>>> parent of 4225313... Sliding window
 		ByteBuffer bufNum = ByteBuffer.allocate(4);
+		System.out.println("Entered sendPackets method 2");
 		ByteBuffer tempBuf = ByteBuffer.allocate(1020);
-		
-		
+		System.out.println("Entered sendPackets method 3");
 		int n = 1;
+		System.out.println("Entered sendPackets method 4");
 		
 		
 			while(fc.read(tempBuf) > 0){ //loop through file
+<<<<<<< HEAD
+=======
+				//System.out.println("Reading File loop: " + instream.read(tempBuf));
+				
+				//putting packet number into bufNum
+				bufNum.asIntBuffer().put(n);
+				//put part of contents of file into tempBuf
+				//bytesread = fc.read(tempBuf);
+				//System.out.println("Reading File loop 2: " + instream.read(tempBuf));
+>>>>>>> parent of 4225313... Sliding window
 				tempBuf.flip();
+				System.out.println("putting data into buffer: " + tempBuf.toString());
 				//put packet number and tempBuf into mapOfBuffers
+<<<<<<< HEAD
 				mapOfBuffers.put(n, tempBuf);
 				
+=======
+				mapOfBuffers.put(bufNum, tempBuf);
+				//System.out.println("read file loop: " + n);
+>>>>>>> parent of 4225313... Sliding window
 				//increment n and the file location
 				n++;
 				
@@ -148,10 +170,27 @@ class udpserver{
 		ByteBuffer currentBuf = ByteBuffer.allocate(1024);
 		ByteBuffer acknumBuf = ByteBuffer.allocate(4);
 		
+<<<<<<< HEAD
 		for (Map.Entry<Integer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
 			currentBuf.putInt(entry.getKey());
 			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
 			currentBuf.flip();
+=======
+		System.out.println("Num buffers in map: " + mapOfBuffers.size());
+		
+		// while(last < mapOfBuffers.size()){ -- old way of looping through map - may have to use this
+		// 	System.out.println("Last: " + last);
+		// 	acknumBuf.putInt(last);
+		// 	System.out.println("Value: " + mapOfBuffers.get(acknumBuf));
+		// 	last++;
+		// 	acknumBuf.clear();
+		// }
+		for (Map.Entry<ByteBuffer, ByteBuffer> entry: mapOfBuffers.entrySet()){ //loop through mapOfBuffers
+			currentBuf.put(entry.getKey());
+			currentBuf.put(entry.getValue()); // entry.getValue will return the ByteBuffer containing the file contents
+
+			//DatagramPacket packet = new DatagramPacket(currentBuf, currentBuf.length, clientaddr);
+>>>>>>> parent of 4225313... Sliding window
 			c.send(currentBuf, clientaddr);
 			currentBuf.clear();
 			numAcksAwaiting++; //Every time we send another packet we are awaiting another ack
@@ -161,6 +200,7 @@ class udpserver{
 			if(numAcksAwaiting >= MAXNUM){ // if at max of sliding window
 				//System.out.println("At max");
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
+<<<<<<< HEAD
 				acknumBuf.flip();
 				int acknum = acknumBuf.getInt();
 				if(acknum < 0){
@@ -168,24 +208,32 @@ class udpserver{
 				}
 
 				last = getPNum(acknumBuf);
+=======
+				last = acknumBuf.getInt();
+				//System.out.println("Last acknum recieved by server before flip: " + last);
+				acknumBuf.flip();
+				last = acknumBuf.getInt();
+				//System.out.println("Last acknum recieved by server after flip: " + last);
+>>>>>>> parent of 4225313... Sliding window
 				acknumBuf.clear();
 			} else {
 				SocketAddress addr = c.receive(acknumBuf); //wait and recieve the ack back from the client
+<<<<<<< HEAD
 				last = getPNum(acknumBuf);
+=======
+				last = acknumBuf.getInt();
+				System.out.println("Last acknum recieved by server before flip: " + last);
+				acknumBuf.flip();
+				last = acknumBuf.getInt();
+				System.out.println("Last acknum recieved by server after flip: " + last);
+>>>>>>> parent of 4225313... Sliding window
 				acknumBuf.clear();
 			}
 
 		}
-		int endMarkerNum = -10;
-		currentBuf.putInt(endMarkerNum);
-		c.send(currentBuf, clientaddr);
-		return;
 	} catch(IOException e){
 		System.out.println("Caught exception e: " + e);
-		return;
 	}
 	}
-
-
 }
 

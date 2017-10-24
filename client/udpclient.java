@@ -135,17 +135,16 @@ class udpclient{
 			FileOutputStream outstream = new FileOutputStream(newfile); //set up an outputstream with that file
 			FileChannel fc = outstream.getChannel();
 
-			int currentPacketNum = 1;
-			int lastPacketNum = 0;
+			int currentPacketNum = 0;
+			int lastPacketNum = -1;
 			ByteBuffer packetNum = ByteBuffer.allocate(4);
 			ByteBuffer data = ByteBuffer.allocate(1020);
 			Boolean notDone = true;
 
 			while(notDone){
-
-
 				ByteBuffer packet = ByteBuffer.allocate(1024);
 				dc.receive(packet);
+<<<<<<< HEAD
 				
 				packet.flip();
 				currentPacketNum = packet.getInt();
@@ -159,6 +158,28 @@ class udpclient{
 				
 				if(currentPacketNum == lastPacketNum + 1){
 					fc.write(packet);
+=======
+
+				int pnumindex = 0;
+				int dataIndex = 0;
+				for(int i = 0; i < packet.position(); i++){
+					if(i<4){ //Then we are looking at the packet number
+						packetNum.put(pnumindex++, packet.get(i));
+						
+						
+						//packetNum.put(i, (byte)0)
+					} else { // We are looking at the data
+						data.put(dataIndex++, packet.get(i)); // so put the packet contents in the data bytebuffer
+					}
+					
+				}
+
+				int pnumint = getPNum(packetNum);
+				System.out.println("Packet number: " + pnumindex);
+				
+				if(currentPacketNum == lastPacketNum + 1){
+					fc.write(data);
+>>>>>>> parent of 4225313... Sliding window
 					lastPacketNum = currentPacketNum;
 					dc.send(packetNum,new InetSocketAddress(ipStr,portnum));
 				} else {
